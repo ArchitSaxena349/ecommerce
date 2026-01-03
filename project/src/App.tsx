@@ -14,6 +14,7 @@ import SignUpPage from './pages/SignUpPage';
 import AboutPage from './pages/AboutPage';
 import AccountPage from './pages/AccountPage';
 import OrdersPage from './pages/OrdersPage';
+import AdminPage from './pages/AdminPage';
 
 function App() {
   const { getUser } = useAuthStore();
@@ -39,6 +40,7 @@ function App() {
             <Route path="/about" element={<AboutPage />} />
             <Route path="/account" element={<AccountPage />} />
             <Route path="/orders" element={<OrdersPage />} />
+            <Route path="/admin" element={<AdminPage />} />
           </Routes>
         </main>
         <Footer />
