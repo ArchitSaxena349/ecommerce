@@ -13,7 +13,7 @@ interface ProductState {
   fetchProductById: (id: string) => Promise<Product | null>;
 }
 
-export const useProductStore = create<ProductState>((set, get) => ({
+export const useProductStore = create<ProductState>((set) => ({
   products: [],
   featuredProducts: [],
   categories: [],

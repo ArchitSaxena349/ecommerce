@@ -4,11 +4,13 @@ import { useAuthStore } from '../store/authStore';
 import { useCartStore } from '../store/cartStore';
 import CheckoutForm from '../components/checkout/CheckoutForm';
 import CartItem from '../components/cart/CartItem';
+import { SHIPPING_FEE, TAX_RATE, calculateOrderTotal, calculateTax } from '../lib/pricing';
 
 const CheckoutPage: React.FC = () => {
   const { user } = useAuthStore();
   const { items, totalPrice } = useCartStore();
   const navigate = useNavigate();
+  const subtotal = totalPrice();
   
   useEffect(() => {
     if (!user) {
@@ -46,23 +48,23 @@ const CheckoutPage: React.FC = () => {
             <div className="border-t border-gray-200 pt-4 mt-4">
               <div className="flex justify-between text-sm mb-2">
                 <span className="text-gray-600">Subtotal</span>
-                <span className="text-gray-900 font-medium">${totalPrice().toFixed(2)}</span>
+                <span className="text-gray-900 font-medium">${subtotal.toFixed(2)}</span>
               </div>
               
               <div className="flex justify-between text-sm mb-2">
                 <span className="text-gray-600">Shipping</span>
-                <span className="text-gray-900 font-medium">$5.99</span>
+                <span className="text-gray-900 font-medium">${SHIPPING_FEE.toFixed(2)}</span>
               </div>
               
               <div className="flex justify-between text-sm mb-4">
-                <span className="text-gray-600">Tax (7%)</span>
-                <span className="text-gray-900 font-medium">${(totalPrice() * 0.07).toFixed(2)}</span>
+                <span className="text-gray-600">Tax ({(TAX_RATE * 100).toFixed(0)}%)</span>
+                <span className="text-gray-900 font-medium">${calculateTax(subtotal).toFixed(2)}</span>
               </div>
               
               <div className="flex justify-between">
                 <span className="text-base font-medium text-gray-900">Total</span>
                 <span className="text-base font-bold text-indigo-600">
-                  ${(totalPrice() + 5.99 + totalPrice() * 0.07).toFixed(2)}
+                  ${calculateOrderTotal(subtotal).toFixed(2)}
                 </span>
               </div>
             </div>

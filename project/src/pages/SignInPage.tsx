@@ -27,7 +27,11 @@ const SignInPage: React.FC = () => {
       const result = await signIn(formData.email, formData.password);
       // Only navigate if sign in was successful
       if (result?.user) {
-        navigate(redirectTo === '/' ? '/' : `/${redirectTo}`);
+        const sanitizedRedirect =
+          redirectTo === '/'
+            ? '/'
+            : `/${redirectTo.replace(/^\/+/, '').replace(/https?:\/\//i, '')}`;
+        navigate(sanitizedRedirect);
       }
     } catch (error) {
       // Error is handled by the auth store

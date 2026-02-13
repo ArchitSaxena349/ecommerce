@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCartStore } from '../../store/cartStore';
 import { useAuthStore } from '../../store/authStore';
 import { stripePromise } from '../../lib/stripe';
+import { calculateOrderTotal } from '../../lib/pricing';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
 
@@ -53,29 +54,41 @@ const CheckoutForm: React.FC = () => {
     setIsLoading(true);
 
     try {
-      const stripe = await stripePromise;
-      if (!stripe) throw new Error('Stripe failed to load');
-
       // Check if we have valid Supabase config
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      const subtotal = totalPrice();
+      const orderTotal = calculateOrderTotal(subtotal);
 
       if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('tlmwhzxaoflkczolztrg')) {
         // MOCK MODE: Simulate network delay and success
-        console.warn('⚠️ Mock Mode: Simulating successful payment');
+        console.warn('Mock mode: simulating successful payment');
 
         // SAVE MOCK ORDER
         try {
-          // Import dynamically or assume global supabase client is mocked if we are here
-          // But better to use the import from ../../lib/supabase which resolves to mock
           const { supabase } = await import('../../lib/supabase');
-          await supabase.from('orders').insert({
+
+          const orderInsertResult = await supabase.from('orders').insert({
             user_id: user?.id || 'guest',
-            items: items,
-            total: totalPrice(),
-            shippingDetails: formData,
-            status: 'paid'
+            total: orderTotal,
+            status: 'completed',
           });
+
+          if (orderInsertResult.error) {
+            throw orderInsertResult.error;
+          }
+
+          const orderId = orderInsertResult.data?.id;
+          if (orderId) {
+            await supabase.from('order_items').insert(
+              items.map(item => ({
+                order_id: orderId,
+                product_id: item.product.id,
+                quantity: item.quantity,
+                price: item.product.price,
+              }))
+            );
+          }
         } catch (err) {
           console.error('Failed to save mock order:', err);
         }
@@ -85,6 +98,9 @@ const CheckoutForm: React.FC = () => {
         navigate('/checkout/success');
         return;
       }
+
+      const stripe = await stripePromise;
+      if (!stripe) throw new Error('Stripe failed to load');
 
       // Create payment intent
       const response = await fetch(`${supabaseUrl}/functions/v1/stripe-payment`, {
@@ -96,18 +112,25 @@ const CheckoutForm: React.FC = () => {
         body: JSON.stringify({
           items,
           userId: user?.id,
-          total: totalPrice(),
           shippingDetails: formData,
         }),
       });
 
-      const { clientSecret, error } = await response.json();
+      if (!response.ok) {
+        const payload = await response.json();
+        throw new Error(payload.error || 'Failed to create payment intent');
+      }
 
-      if (error) throw new Error(error);
+      const { clientSecret } = await response.json();
+
+      if (!clientSecret) {
+        throw new Error('Missing payment client secret');
+      }
 
       // Confirm payment with Stripe's hosted payment page
       const { error: stripeError } = await stripe.confirmPayment({
         clientSecret,
+        redirect: 'if_required',
         confirmParams: {
           return_url: `${window.location.origin}/checkout/success`,
         },
@@ -120,13 +143,7 @@ const CheckoutForm: React.FC = () => {
       navigate('/checkout/success');
     } catch (error) {
       console.error('Payment error:', error);
-      // Fallback for demo purposes if real payment fails but we want to show flow
-      if (confirm('Payment failed (backend unreachable). Continue as mock success?')) {
-        clearCart();
-        navigate('/checkout/success');
-      } else {
-        setErrors({ form: 'Payment processing failed. Please try again.' });
-      }
+      setErrors({ form: 'Payment processing failed. Please try again.' });
     } finally {
       setIsLoading(false);
     }
@@ -216,7 +233,7 @@ const CheckoutForm: React.FC = () => {
       <div className="flex justify-between items-center pt-4 border-t border-gray-200">
         <div>
           <p className="text-lg font-bold text-gray-900">
-            Total: ${totalPrice().toFixed(2)}
+            Total: ${calculateOrderTotal(totalPrice()).toFixed(2)}
           </p>
           <p className="text-sm text-gray-500">Including taxes and shipping</p>
         </div>

@@ -31,7 +31,8 @@ const OrdersPage: React.FC = () => {
           .order('created_at', { ascending: false });
 
         if (error) throw error;
-        setOrders(data || []);
+        const userOrders = (data || []).filter(order => order.user_id === user.id);
+        setOrders(userOrders);
       } catch (error) {
         console.error('Error fetching orders:', error);
       } finally {

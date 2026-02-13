@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Navigate, Routes, Route } from 'react-router-dom';
 import { useAuthStore } from './store/authStore';
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
@@ -17,7 +17,12 @@ import OrdersPage from './pages/OrdersPage';
 import AdminPage from './pages/AdminPage';
 
 function App() {
-  const { getUser } = useAuthStore();
+  const { getUser, user } = useAuthStore();
+  const adminEmails = (import.meta.env.VITE_ADMIN_EMAILS || '')
+    .split(',')
+    .map((email: string) => email.trim().toLowerCase())
+    .filter(Boolean);
+  const isAdmin = Boolean(user && adminEmails.includes(user.email.toLowerCase()));
 
   useEffect(() => {
     getUser();
@@ -40,7 +45,14 @@ function App() {
             <Route path="/about" element={<AboutPage />} />
             <Route path="/account" element={<AccountPage />} />
             <Route path="/orders" element={<OrdersPage />} />
-            <Route path="/admin" element={<AdminPage />} />
+            <Route
+              path="/admin"
+              element={
+                user
+                  ? (isAdmin ? <AdminPage /> : <Navigate to="/" replace />)
+                  : <Navigate to="/signin?redirect=admin" replace />
+              }
+            />
           </Routes>
         </main>
         <Footer />

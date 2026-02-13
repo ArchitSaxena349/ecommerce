@@ -3,7 +3,11 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "npm --prefix project run dev",
+    "build": "npm --prefix project run build",
+    "lint": "npm --prefix project run lint",
+    "preview": "npm --prefix project run preview",
+    "test": "echo \"No automated tests configured\""
   },
   "author": "",
   "license": "ISC",

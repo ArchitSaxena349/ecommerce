@@ -32,9 +32,16 @@ Make sure you've got the following installed:
    cd ecommerce
    ```
 
-3. Install all dependencies:
+3. Install root dependencies (optional helper scripts):
 
    ```bash
+   npm install
+   ```
+
+4. Install app dependencies:
+
+   ```bash
+   cd project
    npm install
    ```
 
@@ -45,13 +52,13 @@ Make sure you've got the following installed:
 Once the setup is done, fire up the development server:
 
 ```bash
-npm start
+npm run dev
 ```
 
 This will launch the app in your default web browser, typically at:
 
 ```
-http://localhost:3000
+http://localhost:5173
 ```
 
 Make changes → Save → See them live. Easy.

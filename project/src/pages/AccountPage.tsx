@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, Settings, Lock } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
@@ -32,10 +32,16 @@ const AccountPage: React.FC = () => {
     twoFactor: false,
   });
 
-  if (!user) {
-    navigate('/signin');
-    return null;
-  }
+  useEffect(() => {
+    if (!user) {
+      navigate('/signin');
+    }
+  }, [navigate, user]);
+
+  if (!user) return null;
+
+  const getErrorMessage = (error: unknown): string =>
+    error instanceof Error ? error.message : 'Something went wrong';
 
   const handleProfileSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,8 +58,8 @@ const AccountPage: React.FC = () => {
       await getUser(); // Refresh local user state
       setMessage({ type: 'success', text: 'Profile updated successfully!' });
       setIsEditingProfile(false);
-    } catch (error: any) {
-      setMessage({ type: 'error', text: error.message });
+    } catch (error: unknown) {
+      setMessage({ type: 'error', text: getErrorMessage(error) });
     } finally {
       setLoading(false);
     }
@@ -74,8 +80,8 @@ const AccountPage: React.FC = () => {
 
       setMessage({ type: 'success', text: 'Settings updated successfully!' });
       setIsEditingSettings(false);
-    } catch (error: any) {
-      setMessage({ type: 'error', text: error.message });
+    } catch (error: unknown) {
+      setMessage({ type: 'error', text: getErrorMessage(error) });
     } finally {
       setLoading(false);
     }
@@ -106,8 +112,8 @@ const AccountPage: React.FC = () => {
       setMessage({ type: 'success', text: 'Password updated successfully!' });
       setSecurityData({ ...securityData, currentPassword: '', newPassword: '', confirmPassword: '' });
       setIsEditingSecurity(false);
-    } catch (error: any) {
-      setMessage({ type: 'error', text: error.message });
+    } catch (error: unknown) {
+      setMessage({ type: 'error', text: getErrorMessage(error) });
     } finally {
       setLoading(false);
     }
@@ -146,8 +152,8 @@ const AccountPage: React.FC = () => {
                 fullWidth
               />
               <div className="flex space-x-2">
-                <Button type="submit">Save Changes</Button>
-                <Button variant="outline" onClick={() => setIsEditingProfile(false)}>Cancel</Button>
+                <Button type="submit" isLoading={loading}>Save Changes</Button>
+                <Button type="button" variant="outline" onClick={() => setIsEditingProfile(false)}>Cancel</Button>
               </div>
             </form>
           ) : (
@@ -201,8 +207,8 @@ const AccountPage: React.FC = () => {
                 </select>
               </div>
               <div className="flex space-x-2">
-                <Button type="submit">Save Changes</Button>
-                <Button variant="outline" onClick={() => setIsEditingSettings(false)}>Cancel</Button>
+                <Button type="submit" isLoading={loading}>Save Changes</Button>
+                <Button type="button" variant="outline" onClick={() => setIsEditingSettings(false)}>Cancel</Button>
               </div>
             </form>
           ) : (
@@ -264,8 +270,8 @@ const AccountPage: React.FC = () => {
                 </label>
               </div>
               <div className="flex space-x-2">
-                <Button type="submit">Save Changes</Button>
-                <Button variant="outline" onClick={() => setIsEditingSecurity(false)}>Cancel</Button>
+                <Button type="submit" isLoading={loading}>Save Changes</Button>
+                <Button type="button" variant="outline" onClick={() => setIsEditingSecurity(false)}>Cancel</Button>
               </div>
             </form>
           ) : (

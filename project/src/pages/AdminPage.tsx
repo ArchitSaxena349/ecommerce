@@ -1,13 +1,34 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
+import { useAuthStore } from '../store/authStore';
+
+interface AdminOrder {
+    id: string;
+    created_at: string;
+    user_id: string;
+    total: number;
+    status: string;
+}
 
 const AdminPage: React.FC = () => {
-    const [orders, setOrders] = useState<any[]>([]);
+    const { user } = useAuthStore();
+    const [orders, setOrders] = useState<AdminOrder[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const navigate = useNavigate();
 
     useEffect(() => {
+        const adminEmails = (import.meta.env.VITE_ADMIN_EMAILS || '')
+            .split(',')
+            .map((email: string) => email.trim().toLowerCase())
+            .filter(Boolean);
+        const isAdmin = Boolean(user && adminEmails.includes(user.email.toLowerCase()));
+
+        if (!user || !isAdmin) {
+            navigate('/');
+            return;
+        }
+
         const fetchOrders = async () => {
             try {
                 const { data, error } = await supabase
@@ -16,7 +37,7 @@ const AdminPage: React.FC = () => {
                     .order('created_at', { ascending: false });
 
                 if (error) throw error;
-                setOrders(data || []);
+                setOrders((data || []) as AdminOrder[]);
             } catch (err) {
                 console.error('Error fetching orders:', err);
             } finally {
@@ -25,7 +46,7 @@ const AdminPage: React.FC = () => {
         };
 
         fetchOrders();
-    }, []);
+    }, [navigate, user]);
 
     return (
         <div className="container mx-auto px-4 py-8">
@@ -68,14 +89,14 @@ const AdminPage: React.FC = () => {
                                             {new Date(order.created_at).toLocaleDateString()}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {order.shippingDetails?.fullName || 'Guest'}
+                                            {order.user_id}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                             ${order.total?.toFixed(2)}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                                Paid
+                                                {order.status}
                                             </span>
                                         </td>
                                     </tr>
