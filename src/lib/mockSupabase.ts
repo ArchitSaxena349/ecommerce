@@ -150,6 +150,11 @@ class MockSupabaseClient {
       };
     },
 
+    getSession: async (): Promise<QueryResult<{ session: MockSession | null }>> => ({
+      data: { session: getStored<MockSession | null>(STORAGE_KEY_SESSION, null) },
+      error: null,
+    }),
+
     updateUser: async (attributes: {
       data?: Record<string, unknown>;
       email?: string;

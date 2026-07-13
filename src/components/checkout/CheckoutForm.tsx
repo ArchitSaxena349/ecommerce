@@ -154,12 +154,18 @@ const CheckoutForm: React.FC = () => {
       const stripe = await stripePromise;
       if (!stripe) throw new Error('Stripe failed to load');
 
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError || !sessionData.session?.access_token) {
+        throw new Error('Your session has expired. Please sign in again.');
+      }
+
       // Create payment intent
       const response = await fetch(`${supabaseUrl}/functions/v1/stripe-payment`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${supabaseKey}`,
+          'Authorization': `Bearer ${sessionData.session.access_token}`,
+          'apikey': supabaseKey,
         },
         body: JSON.stringify({
           items,
