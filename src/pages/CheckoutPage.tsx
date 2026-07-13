@@ -8,7 +8,7 @@ import { SHIPPING_FEE, TAX_RATE, calculateOrderTotal, calculateTax } from '../li
 
 const CheckoutPage: React.FC = () => {
   const { user } = useAuthStore();
-  const { items, totalPrice } = useCartStore();
+  const { items, totalPrice, lastCompletedOrder } = useCartStore();
   const navigate = useNavigate();
   const subtotal = totalPrice();
   
@@ -17,10 +17,10 @@ const CheckoutPage: React.FC = () => {
       navigate('/signin?redirect=checkout');
     }
     
-    if (items.length === 0) {
+    if (items.length === 0 && !lastCompletedOrder) {
       navigate('/cart');
     }
-  }, [user, items, navigate]);
+  }, [user, items, lastCompletedOrder, navigate]);
   
   return (
     <div className="container mx-auto px-4 py-8">

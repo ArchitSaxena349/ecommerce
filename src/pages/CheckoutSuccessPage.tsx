@@ -1,18 +1,11 @@
-import React, { useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React from 'react';
+import { Link } from 'react-router-dom';
 import { CheckCircle } from 'lucide-react';
 import { useCartStore } from '../store/cartStore';
 import Button from '../components/ui/Button';
 
 const CheckoutSuccessPage: React.FC = () => {
-  const { items } = useCartStore();
-  const navigate = useNavigate();
-  
-  useEffect(() => {
-    if (items.length > 0) {
-      navigate('/checkout');
-    }
-  }, [items, navigate]);
+  const { lastCompletedOrder } = useCartStore();
   
   return (
     <div className="container mx-auto px-4 py-12 text-center">
@@ -28,11 +21,11 @@ const CheckoutSuccessPage: React.FC = () => {
           <div className="space-y-2">
             <p className="flex justify-between">
               <span className="text-gray-600">Order Number:</span>
-              <span className="font-medium">ORD-{Math.floor(Math.random() * 10000).toString().padStart(4, '0')}</span>
+              <span className="font-medium">{lastCompletedOrder ? `#${lastCompletedOrder.orderId.slice(0, 8).toUpperCase()}` : 'Processing confirmation'}</span>
             </p>
             <p className="flex justify-between">
               <span className="text-gray-600">Date:</span>
-              <span className="font-medium">{new Date().toLocaleDateString()}</span>
+              <span className="font-medium">{lastCompletedOrder ? new Date(lastCompletedOrder.completedAt).toLocaleDateString() : new Date().toLocaleDateString()}</span>
             </p>
             <p className="flex justify-between">
               <span className="text-gray-600">Payment Method:</span>
@@ -48,8 +41,8 @@ const CheckoutSuccessPage: React.FC = () => {
           <Link to="/">
             <Button>Continue Shopping</Button>
           </Link>
-          <Link to="/account">
-            <Button variant="outline">View My Account</Button>
+          <Link to="/orders">
+            <Button variant="outline">View My Orders</Button>
           </Link>
         </div>
       </div>

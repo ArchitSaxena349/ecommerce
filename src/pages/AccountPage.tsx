@@ -5,6 +5,7 @@ import { useAuthStore } from '../store/authStore';
 import { supabase } from '../lib/supabase';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
+import SavedAddresses from '../components/account/SavedAddresses';
 
 const AccountPage: React.FC = () => {
   const { user, signOut, getUser } = useAuthStore();
@@ -289,6 +290,15 @@ const AccountPage: React.FC = () => {
               </Button>
             </div>
           )}
+        </div>
+      </div>
+
+      <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <SavedAddresses />
+        <div className="bg-white rounded-lg shadow-sm p-6 flex flex-col items-start">
+          <h2 className="text-lg font-medium text-gray-900 mb-2">Order History</h2>
+          <p className="text-gray-600 mb-4">Track recent purchases and review your completed orders.</p>
+          <Button variant="outline" onClick={() => navigate('/orders')}>View My Orders</Button>
         </div>
       </div>
 

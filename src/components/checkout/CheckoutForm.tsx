@@ -6,10 +6,11 @@ import { stripePromise } from '../../lib/stripe';
 import { calculateOrderTotal } from '../../lib/pricing';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
+import type { SavedAddress } from '../../types';
 
 const CheckoutForm: React.FC = () => {
   const { user } = useAuthStore();
-  const { items, totalPrice, clearCart } = useCartStore();
+  const { items, totalPrice, completeOrder } = useCartStore();
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
@@ -23,6 +24,22 @@ const CheckoutForm: React.FC = () => {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
+  const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
+
+  React.useEffect(() => {
+    const loadSavedAddresses = async () => {
+      const { data } = await (await import('../../lib/supabase')).supabase.auth.getUser();
+      const addresses = data.user?.user_metadata?.saved_addresses;
+      if (Array.isArray(addresses)) setSavedAddresses(addresses as SavedAddress[]);
+    };
+    loadSavedAddresses();
+  }, []);
+
+  const applySavedAddress = (addressId: string) => {
+    const address = savedAddresses.find(item => item.id === addressId);
+    if (!address) return;
+    setFormData(current => ({ ...current, ...address }));
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -94,7 +111,7 @@ const CheckoutForm: React.FC = () => {
         }
 
         await new Promise(resolve => setTimeout(resolve, 1500));
-        clearCart();
+        completeOrder({ orderId: String(orderId || `mock-${Date.now()}`), total: orderTotal, completedAt: new Date().toISOString() });
         navigate('/checkout/success');
         return;
       }
@@ -121,7 +138,7 @@ const CheckoutForm: React.FC = () => {
         throw new Error(payload.error || 'Failed to create payment intent');
       }
 
-      const { clientSecret } = await response.json();
+      const { clientSecret, orderId } = await response.json();
 
       if (!clientSecret) {
         throw new Error('Missing payment client secret');
@@ -139,7 +156,7 @@ const CheckoutForm: React.FC = () => {
       if (stripeError) throw stripeError;
 
       // Clear cart and redirect on success
-      clearCart();
+      completeOrder({ orderId: String(orderId), total: orderTotal, completedAt: new Date().toISOString() });
       navigate('/checkout/success');
     } catch (error) {
       console.error('Payment error:', error);
@@ -186,6 +203,17 @@ const CheckoutForm: React.FC = () => {
 
       <div>
         <h3 className="text-lg font-medium text-gray-900 mb-4">Shipping Address</h3>
+        {savedAddresses.length > 0 && (
+          <div className="mb-4">
+            <label htmlFor="saved-address" className="block text-sm font-medium text-gray-700 mb-1">Use a saved address</label>
+            <select id="saved-address" className="w-full border border-gray-300 rounded-md px-3 py-2" defaultValue="" onChange={(event) => applySavedAddress(event.target.value)}>
+              <option value="">Enter a new address</option>
+              {savedAddresses.map((address) => (
+                <option key={address.id} value={address.id}>{address.label} — {address.address}, {address.city}</option>
+              ))}
+            </select>
+          </div>
+        )}
         <div className="space-y-4">
           <Input
             label="Street Address"

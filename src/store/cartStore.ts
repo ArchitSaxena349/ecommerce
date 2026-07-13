@@ -1,13 +1,15 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { CartItem, Product } from '../types';
+import type { CartItem, CheckoutReceipt, Product } from '../types';
 
 interface CartState {
   items: CartItem[];
+  lastCompletedOrder: CheckoutReceipt | null;
   addItem: (product: Product, quantity?: number) => void;
   removeItem: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
+  completeOrder: (receipt: CheckoutReceipt) => void;
   totalItems: () => number;
   totalPrice: () => number;
 }
@@ -16,6 +18,7 @@ export const useCartStore = create<CartState>()(
   persist(
     (set, get) => ({
       items: [],
+      lastCompletedOrder: null,
       
       addItem: (product, quantity = 1) => {
         const { items } = get();
@@ -27,10 +30,11 @@ export const useCartStore = create<CartState>()(
               item.product.id === product.id 
                 ? { ...item, quantity: item.quantity + quantity }
                 : item
-            )
+            ),
+            lastCompletedOrder: null,
           });
         } else {
-          set({ items: [...items, { product, quantity }] });
+          set({ items: [...items, { product, quantity }], lastCompletedOrder: null });
         }
       },
       
@@ -55,6 +59,8 @@ export const useCartStore = create<CartState>()(
       },
       
       clearCart: () => set({ items: [] }),
+
+      completeOrder: (receipt) => set({ items: [], lastCompletedOrder: receipt }),
       
       totalItems: () => {
         const { items } = get();

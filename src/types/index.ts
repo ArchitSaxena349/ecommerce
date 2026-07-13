@@ -19,6 +19,22 @@ export interface CartItem {
   quantity: number;
 }
 
+export interface SavedAddress {
+  id: string;
+  label: string;
+  fullName: string;
+  address: string;
+  city: string;
+  state: string;
+  zipCode: string;
+}
+
+export interface CheckoutReceipt {
+  orderId: string;
+  total: number;
+  completedAt: string;
+}
+
 export interface CheckoutItem {
   price: string;
   quantity: number;

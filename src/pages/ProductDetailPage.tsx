@@ -9,10 +9,11 @@ import ProductGrid from '../components/product/ProductGrid';
 const ProductDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { fetchProductById, products, isLoading, error } = useProductStore();
-  const { addItem } = useCartStore();
+  const { addItem, items } = useCartStore();
   const [product, setProduct] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState('description');
+  const [addedToCart, setAddedToCart] = useState(false);
   
   useEffect(() => {
     if (id) {
@@ -28,6 +29,7 @@ const ProductDetailPage: React.FC = () => {
   const handleAddToCart = () => {
     if (product) {
       addItem(product, quantity);
+      setAddedToCart(true);
     }
   };
   
@@ -42,6 +44,7 @@ const ProductDetailPage: React.FC = () => {
   const relatedProducts = products
     .filter(p => product && p.category === product.category && p.id !== product.id)
     .slice(0, 4);
+  const quantityInCart = product ? items.find(item => item.product.id === product.id)?.quantity || 0 : 0;
   
   if (isLoading) {
     return (
@@ -127,9 +130,14 @@ const ProductDetailPage: React.FC = () => {
                 className="ml-4 flex items-center"
               >
                 <ShoppingCart className="h-5 w-5 mr-2" />
-                Add to Cart
+                {quantityInCart > 0 ? 'Add More to Cart' : 'Add to Cart'}
               </Button>
             </div>
+            {addedToCart && (
+              <p className="mt-3 text-sm text-green-700" role="status">
+                Added to your cart. You now have {quantityInCart} of this product in your cart.
+              </p>
+            )}
           </div>
           
           <div className="border-t border-gray-200 pt-6">
