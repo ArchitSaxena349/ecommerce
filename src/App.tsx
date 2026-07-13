@@ -15,6 +15,9 @@ import AboutPage from './pages/AboutPage';
 import AccountPage from './pages/AccountPage';
 import OrdersPage from './pages/OrdersPage';
 import AdminPage from './pages/AdminPage';
+import CareersPage from './pages/CareersPage';
+import PrivacyPage from './pages/PrivacyPage';
+import TermsPage from './pages/TermsPage';
 
 function App() {
   const { getUser, user } = useAuthStore();
@@ -43,6 +46,9 @@ function App() {
             <Route path="/signin" element={<SignInPage />} />
             <Route path="/signup" element={<SignUpPage />} />
             <Route path="/about" element={<AboutPage />} />
+            <Route path="/careers" element={<CareersPage />} />
+            <Route path="/privacy" element={<PrivacyPage />} />
+            <Route path="/terms" element={<TermsPage />} />
             <Route path="/account" element={<AccountPage />} />
             <Route path="/orders" element={<OrdersPage />} />
             <Route
