@@ -109,6 +109,7 @@ const CheckoutForm: React.FC = () => {
       // Check if we have valid Supabase config
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
       const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      const paymentFunction = import.meta.env.VITE_STRIPE_FUNCTION_NAME || 'rapid-function';
       const subtotal = totalPrice();
       const orderTotal = calculateOrderTotal(subtotal);
 
@@ -160,7 +161,7 @@ const CheckoutForm: React.FC = () => {
       }
 
       // Create payment intent
-      const response = await fetch(`${supabaseUrl}/functions/v1/stripe-payment`, {
+      const response = await fetch(`${supabaseUrl}/functions/v1/${paymentFunction}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -36,6 +36,7 @@ Copy `.env.example` to `.env` and provide the values for your environment:
 VITE_SUPABASE_URL=your-supabase-url
 VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
 VITE_STRIPE_PUBLISHABLE_KEY=your-stripe-publishable-key
+VITE_STRIPE_FUNCTION_NAME=rapid-function
 ```
 
 When Supabase is not configured, the app uses its local mock data layer so the storefront can still be explored.
@@ -50,4 +51,4 @@ supabase/migrations/ Database migrations
 
 ## Payments and orders
 
-For a real Stripe checkout flow, deploy the `supabase/functions/stripe-payment` Edge Function and configure its `STRIPE_SECRET_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, and `ALLOWED_ORIGIN` secrets. Set `ALLOWED_ORIGIN` to your deployed frontend URL, for example `https://ecommerce-eight-ashy-52.vercel.app`. Apply the migrations in `supabase/migrations` to create the order tables and access policies.
+For a real Stripe checkout flow, deploy the payment Edge Function (`rapid-function` by default) and configure its `STRIPE_SECRET_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, and `ALLOWED_ORIGIN` secrets. Set `ALLOWED_ORIGIN` to your deployed frontend URL, for example `https://ecommerce-eight-ashy-52.vercel.app`. Apply the migrations in `supabase/migrations` to create the order tables and access policies.
