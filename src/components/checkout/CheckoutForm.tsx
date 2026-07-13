@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import type { StripeElements, StripePaymentElement } from '@stripe/stripe-js';
 import { useCartStore } from '../../store/cartStore';
 import { useAuthStore } from '../../store/authStore';
 import { stripePromise } from '../../lib/stripe';
@@ -28,6 +29,9 @@ const CheckoutForm: React.FC = () => {
   const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
   const [saveAddress, setSaveAddress] = useState(false);
   const [addressLabel, setAddressLabel] = useState('Home');
+  const [paymentIntent, setPaymentIntent] = useState<{ clientSecret: string; orderId: string; total: number } | null>(null);
+  const [stripeElements, setStripeElements] = useState<StripeElements | null>(null);
+  const paymentElementRef = useRef<StripePaymentElement | null>(null);
 
   React.useEffect(() => {
     const loadSavedAddresses = async () => {
@@ -37,6 +41,27 @@ const CheckoutForm: React.FC = () => {
     };
     loadSavedAddresses();
   }, []);
+
+  useEffect(() => {
+    if (!paymentIntent) return;
+
+    let isActive = true;
+    stripePromise.then((stripe) => {
+      if (!stripe || !isActive) return;
+      const elements = stripe.elements({ clientSecret: paymentIntent.clientSecret });
+      const paymentElement = elements.create('payment', { layout: 'tabs' });
+      paymentElement.mount('#payment-element');
+      paymentElementRef.current = paymentElement;
+      setStripeElements(elements);
+    }).catch(() => setErrors({ form: 'Could not load the secure payment form. Please refresh and try again.' }));
+
+    return () => {
+      isActive = false;
+      paymentElementRef.current?.destroy();
+      paymentElementRef.current = null;
+      setStripeElements(null);
+    };
+  }, [paymentIntent]);
 
   const applySavedAddress = (addressId: string) => {
     const address = savedAddresses.find(item => item.id === addressId);
@@ -101,6 +126,11 @@ const CheckoutForm: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (paymentIntent) {
+      await handleConfirmPayment();
+      return;
+    }
+
     if (!validateForm()) return;
 
     setIsLoading(true);
@@ -152,9 +182,6 @@ const CheckoutForm: React.FC = () => {
         return;
       }
 
-      const stripe = await stripePromise;
-      if (!stripe) throw new Error('Stripe failed to load');
-
       const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
       if (sessionError || !sessionData.session?.access_token) {
         throw new Error('Your session has expired. Please sign in again.');
@@ -182,28 +209,46 @@ const CheckoutForm: React.FC = () => {
 
       const { clientSecret, orderId } = await response.json();
 
-      if (!clientSecret) {
+      if (!clientSecret || !orderId) {
         throw new Error('Missing payment client secret');
       }
-
-      // Confirm payment with Stripe's hosted payment page
-      const { error: stripeError } = await stripe.confirmPayment({
-        clientSecret,
-        redirect: 'if_required',
-        confirmParams: {
-          return_url: `${window.location.origin}/checkout/success`,
-        },
-      });
-
-      if (stripeError) throw stripeError;
-
-      // Clear cart and redirect on success
-      await saveShippingAddress();
-      completeOrder({ orderId: String(orderId), total: orderTotal, completedAt: new Date().toISOString() });
-      navigate('/checkout/success');
+      setPaymentIntent({ clientSecret, orderId: String(orderId), total: orderTotal });
     } catch (error) {
       console.error('Payment error:', error);
       setErrors({ form: 'Payment processing failed. Please try again.' });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleConfirmPayment = async () => {
+    if (!paymentIntent || !stripeElements) {
+      setErrors({ form: 'The payment form is still loading. Please wait a moment.' });
+      return;
+    }
+
+    setIsLoading(true);
+    setErrors({});
+    try {
+      const stripe = await stripePromise;
+      if (!stripe) throw new Error('Stripe failed to load');
+      const { error: submitError } = await stripeElements.submit();
+      if (submitError) throw submitError;
+
+      const { error: stripeError } = await stripe.confirmPayment({
+        elements: stripeElements,
+        clientSecret: paymentIntent.clientSecret,
+        redirect: 'if_required',
+        confirmParams: { return_url: `${window.location.origin}/checkout/success` },
+      });
+      if (stripeError) throw stripeError;
+
+      await saveShippingAddress();
+      completeOrder({ orderId: paymentIntent.orderId, total: paymentIntent.total, completedAt: new Date().toISOString() });
+      navigate('/checkout/success');
+    } catch (error) {
+      console.error('Payment error:', error);
+      setErrors({ form: error instanceof Error ? error.message : 'Payment processing failed. Please try again.' });
     } finally {
       setIsLoading(false);
     }
@@ -304,6 +349,13 @@ const CheckoutForm: React.FC = () => {
         </div>
       </div>
 
+      {paymentIntent && (
+        <div className="border-t border-gray-200 pt-6">
+          <h3 className="text-lg font-medium text-gray-900 mb-4">Payment Details</h3>
+          <div id="payment-element" className="rounded-md border border-gray-200 p-4" />
+        </div>
+      )}
+
       {errors.form && (
         <div className="bg-red-50 text-red-700 p-4 rounded-md">
           {errors.form}
@@ -318,7 +370,7 @@ const CheckoutForm: React.FC = () => {
           <p className="text-sm text-gray-500">Including taxes and shipping</p>
         </div>
         <Button type="submit" isLoading={isLoading}>
-          Complete Order
+          {paymentIntent ? `Pay $${paymentIntent.total.toFixed(2)}` : 'Continue to Payment'}
         </Button>
       </div>
     </form>
