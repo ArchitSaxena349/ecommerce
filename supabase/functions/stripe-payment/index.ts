@@ -21,8 +21,10 @@ const allowedOrigin = Deno.env.get('ALLOWED_ORIGIN') || '';
 const SHIPPING_FEE = 5.99;
 const TAX_RATE = 0.07;
 
-const corsHeaders = () => ({
-  'Access-Control-Allow-Origin': allowedOrigin || 'null',
+const corsHeaders = (requestOrigin: string | null) => ({
+  // ALLOWED_ORIGIN should be set in production. Falling back to the requesting
+  // origin keeps preview and local deployments functional until it is configured.
+  'Access-Control-Allow-Origin': allowedOrigin || requestOrigin || 'null',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization, apikey, x-client-info',
   Vary: 'Origin',
@@ -35,8 +37,8 @@ const getAuthToken = (authHeader: string | null): string | null => {
 };
 
 serve(async (req: Request) => {
-  const headers = corsHeaders();
   const requestOrigin = req.headers.get('origin');
+  const headers = corsHeaders(requestOrigin);
 
   if (req.method === 'OPTIONS') {
     return new Response(null, { status: 200, headers });

@@ -50,4 +50,4 @@ supabase/migrations/ Database migrations
 
 ## Payments and orders
 
-For a real Stripe checkout flow, deploy the `supabase/functions/stripe-payment` Edge Function and configure its Stripe and Supabase environment variables. Apply the migrations in `supabase/migrations` to create the order tables and access policies.
+For a real Stripe checkout flow, deploy the `supabase/functions/stripe-payment` Edge Function and configure its `STRIPE_SECRET_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, and `ALLOWED_ORIGIN` secrets. Set `ALLOWED_ORIGIN` to your deployed frontend URL, for example `https://ecommerce-eight-ashy-52.vercel.app`. Apply the migrations in `supabase/migrations` to create the order tables and access policies.
