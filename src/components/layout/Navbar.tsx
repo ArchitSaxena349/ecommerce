@@ -45,6 +45,9 @@ const Navbar: React.FC = () => {
             <Link to="/about" className="text-gray-700 hover:text-indigo-600 transition-colors">
               About
             </Link>
+            <Link to="/orders" className="text-gray-700 hover:text-indigo-600 transition-colors">
+              My Orders
+            </Link>
           </nav>
 
           {/* Desktop Actions */}
@@ -153,6 +156,13 @@ const Navbar: React.FC = () => {
                 <ShoppingCart className="h-5 w-5" />
                 <span>Cart ({totalItems()})</span>
               </Link>
+              <Link 
+                to="/orders" 
+                className="text-gray-700 hover:text-indigo-600 transition-colors"
+                onClick={closeMenu}
+              >
+                My Orders
+              </Link>
               
               {user ? (
                 <>
@@ -162,13 +172,6 @@ const Navbar: React.FC = () => {
                     onClick={closeMenu}
                   >
                     My Account
-                  </Link>
-                  <Link 
-                    to="/orders" 
-                    className="text-gray-700 hover:text-indigo-600 transition-colors"
-                    onClick={closeMenu}
-                  >
-                    My Orders
                   </Link>
                   <button 
                     onClick={handleSignOut}

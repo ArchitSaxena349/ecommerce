@@ -7,6 +7,7 @@ import { calculateOrderTotal } from '../../lib/pricing';
 import Button from '../ui/Button';
 import Input from '../ui/Input';
 import type { SavedAddress } from '../../types';
+import { supabase } from '../../lib/supabase';
 
 const CheckoutForm: React.FC = () => {
   const { user } = useAuthStore();
@@ -25,10 +26,12 @@ const CheckoutForm: React.FC = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [savedAddresses, setSavedAddresses] = useState<SavedAddress[]>([]);
+  const [saveAddress, setSaveAddress] = useState(false);
+  const [addressLabel, setAddressLabel] = useState('Home');
 
   React.useEffect(() => {
     const loadSavedAddresses = async () => {
-      const { data } = await (await import('../../lib/supabase')).supabase.auth.getUser();
+      const { data } = await supabase.auth.getUser();
       const addresses = data.user?.user_metadata?.saved_addresses;
       if (Array.isArray(addresses)) setSavedAddresses(addresses as SavedAddress[]);
     };
@@ -63,6 +66,38 @@ const CheckoutForm: React.FC = () => {
     return Object.keys(newErrors).length === 0;
   };
 
+  const saveShippingAddress = async () => {
+    if (!saveAddress || !user) return;
+
+    try {
+      const { data } = await supabase.auth.getUser();
+      const metadata = data.user?.user_metadata as Record<string, unknown> | undefined;
+      const existing = Array.isArray(metadata?.saved_addresses)
+        ? metadata.saved_addresses as SavedAddress[]
+        : [];
+      const isAlreadySaved = existing.some(address =>
+        address.address === formData.address && address.city === formData.city && address.zipCode === formData.zipCode
+      );
+
+      if (!isAlreadySaved) {
+        const nextAddresses = [...existing, {
+          id: crypto.randomUUID(),
+          label: addressLabel.trim() || 'Saved address',
+          fullName: formData.fullName,
+          address: formData.address,
+          city: formData.city,
+          state: formData.state,
+          zipCode: formData.zipCode,
+        }];
+        const { error } = await supabase.auth.updateUser({ data: { saved_addresses: nextAddresses } });
+        if (error) throw error;
+        setSavedAddresses(nextAddresses);
+      }
+    } catch (error) {
+      console.error('Could not save shipping address:', error);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -81,10 +116,9 @@ const CheckoutForm: React.FC = () => {
         // MOCK MODE: Simulate network delay and success
         console.warn('Mock mode: simulating successful payment');
 
+        let mockOrderId: string | undefined;
         // SAVE MOCK ORDER
         try {
-          const { supabase } = await import('../../lib/supabase');
-
           const orderInsertResult = await supabase.from('orders').insert({
             user_id: user?.id || 'guest',
             total: orderTotal,
@@ -95,11 +129,11 @@ const CheckoutForm: React.FC = () => {
             throw orderInsertResult.error;
           }
 
-          const orderId = orderInsertResult.data?.id;
-          if (orderId) {
+          mockOrderId = orderInsertResult.data?.id as string | undefined;
+          if (mockOrderId) {
             await supabase.from('order_items').insert(
               items.map(item => ({
-                order_id: orderId,
+                order_id: mockOrderId,
                 product_id: item.product.id,
                 quantity: item.quantity,
                 price: item.product.price,
@@ -111,7 +145,8 @@ const CheckoutForm: React.FC = () => {
         }
 
         await new Promise(resolve => setTimeout(resolve, 1500));
-        completeOrder({ orderId: String(orderId || `mock-${Date.now()}`), total: orderTotal, completedAt: new Date().toISOString() });
+        await saveShippingAddress();
+        completeOrder({ orderId: String(mockOrderId || `mock-${Date.now()}`), total: orderTotal, completedAt: new Date().toISOString() });
         navigate('/checkout/success');
         return;
       }
@@ -156,6 +191,7 @@ const CheckoutForm: React.FC = () => {
       if (stripeError) throw stripeError;
 
       // Clear cart and redirect on success
+      await saveShippingAddress();
       completeOrder({ orderId: String(orderId), total: orderTotal, completedAt: new Date().toISOString() });
       navigate('/checkout/success');
     } catch (error) {
@@ -248,6 +284,15 @@ const CheckoutForm: React.FC = () => {
               error={errors.zipCode}
               fullWidth
             />
+          </div>
+          <div className="rounded-md bg-gray-50 p-3">
+            <label className="flex items-center gap-2 text-sm font-medium text-gray-800">
+              <input type="checkbox" checked={saveAddress} onChange={event => setSaveAddress(event.target.checked)} className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+              Save this address for future orders
+            </label>
+            {saveAddress && (
+              <Input label="Address label" value={addressLabel} onChange={event => setAddressLabel(event.target.value)} placeholder="Home, Work, etc." fullWidth className="mt-3" />
+            )}
           </div>
         </div>
       </div>

@@ -13,7 +13,6 @@ const ProductDetailPage: React.FC = () => {
   const [product, setProduct] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState('description');
-  const [addedToCart, setAddedToCart] = useState(false);
   
   useEffect(() => {
     if (id) {
@@ -29,7 +28,6 @@ const ProductDetailPage: React.FC = () => {
   const handleAddToCart = () => {
     if (product) {
       addItem(product, quantity);
-      setAddedToCart(true);
     }
   };
   
@@ -117,26 +115,25 @@ const ProductDetailPage: React.FC = () => {
           
           <div className="mb-6">
             <h3 className="text-sm font-medium text-gray-900 mb-2">Quantity</h3>
-            <div className="flex items-center">
-              <input
-                type="number"
-                min="1"
-                value={quantity}
-                onChange={handleQuantityChange}
-                className="w-16 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              />
-              <Button
-                onClick={handleAddToCart}
-                className="ml-4 flex items-center"
-              >
-                <ShoppingCart className="h-5 w-5 mr-2" />
-                {quantityInCart > 0 ? 'Add More to Cart' : 'Add to Cart'}
-              </Button>
-            </div>
-            {addedToCart && (
-              <p className="mt-3 text-sm text-green-700" role="status">
-                Added to your cart. You now have {quantityInCart} of this product in your cart.
-              </p>
+            {quantityInCart > 0 ? (
+              <Link to="/cart" className="inline-flex h-10 items-center rounded-md bg-green-50 px-4 font-medium text-green-800 hover:bg-green-100">
+                <ShoppingCart className="mr-2 h-5 w-5" />
+                In cart: {quantityInCart} · View cart
+              </Link>
+            ) : (
+              <div className="flex items-center">
+                <input
+                  type="number"
+                  min="1"
+                  value={quantity}
+                  onChange={handleQuantityChange}
+                  className="w-16 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                />
+                <Button onClick={handleAddToCart} className="ml-4 flex items-center">
+                  <ShoppingCart className="h-5 w-5 mr-2" />
+                  Add to Cart
+                </Button>
+              </div>
             )}
           </div>
           
