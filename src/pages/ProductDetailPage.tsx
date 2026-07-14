@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ShoppingCart, ArrowLeft, Star } from 'lucide-react';
+import { ShoppingCart, ArrowLeft, Minus, Plus, Star } from 'lucide-react';
 import { useProductStore } from '../store/productStore';
 import { useCartStore } from '../store/cartStore';
 import Button from '../components/ui/Button';
@@ -9,7 +9,7 @@ import ProductGrid from '../components/product/ProductGrid';
 const ProductDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { fetchProductById, products, isLoading, error } = useProductStore();
-  const { addItem, items } = useCartStore();
+  const { addItem, items, updateQuantity } = useCartStore();
   const [product, setProduct] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState('description');
@@ -31,10 +31,23 @@ const ProductDetailPage: React.FC = () => {
     }
   };
   
-  const handleQuantityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseInt(e.target.value);
-    if (value > 0) {
-      setQuantity(value);
+  const handleIncrement = () => {
+    if (!product) return;
+
+    if (quantityInCart > 0) {
+      updateQuantity(product.id, quantityInCart + 1);
+    } else {
+      setQuantity(currentQuantity => currentQuantity + 1);
+    }
+  };
+
+  const handleDecrement = () => {
+    if (!product) return;
+
+    if (quantityInCart > 0) {
+      updateQuantity(product.id, quantityInCart - 1);
+    } else {
+      setQuantity(currentQuantity => Math.max(1, currentQuantity - 1));
     }
   };
   
@@ -116,19 +129,32 @@ const ProductDetailPage: React.FC = () => {
           <div className="mb-6">
             <h3 className="text-sm font-medium text-gray-900 mb-2">Quantity</h3>
             {quantityInCart > 0 ? (
+              <>
               <Link to="/cart" className="inline-flex h-10 items-center rounded-md bg-green-50 px-4 font-medium text-green-800 hover:bg-green-100">
                 <ShoppingCart className="mr-2 h-5 w-5" />
                 In cart: {quantityInCart} · View cart
               </Link>
+              <div className="mt-3 flex w-fit items-center overflow-hidden rounded-md border border-indigo-600 text-indigo-600">
+                <button type="button" onClick={handleDecrement} aria-label="Decrease quantity" className="p-2 transition-colors hover:bg-indigo-50">
+                  <Minus className="h-5 w-5" />
+                </button>
+                <span className="min-w-10 border-x border-indigo-600 px-3 py-2 text-center font-semibold">{quantityInCart}</span>
+                <button type="button" onClick={handleIncrement} aria-label="Increase quantity" className="p-2 transition-colors hover:bg-indigo-50">
+                  <Plus className="h-5 w-5" />
+                </button>
+              </div>
+              </>
             ) : (
               <div className="flex items-center">
-                <input
-                  type="number"
-                  min="1"
-                  value={quantity}
-                  onChange={handleQuantityChange}
-                  className="w-16 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                />
+                <div className="flex items-center overflow-hidden rounded-md border border-indigo-600 text-indigo-600">
+                  <button type="button" onClick={handleDecrement} aria-label="Decrease quantity" className="p-2 transition-colors hover:bg-indigo-50">
+                    <Minus className="h-5 w-5" />
+                  </button>
+                  <span className="min-w-10 border-x border-indigo-600 px-3 py-2 text-center font-semibold">{quantity}</span>
+                  <button type="button" onClick={handleIncrement} aria-label="Increase quantity" className="p-2 transition-colors hover:bg-indigo-50">
+                    <Plus className="h-5 w-5" />
+                  </button>
+                </div>
                 <Button onClick={handleAddToCart} className="ml-4 flex items-center">
                   <ShoppingCart className="h-5 w-5 mr-2" />
                   Add to Cart

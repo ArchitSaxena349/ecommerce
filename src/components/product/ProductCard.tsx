@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ShoppingCart } from 'lucide-react';
+import { Minus, Plus, ShoppingCart } from 'lucide-react';
 import { Product } from '../../types';
 import { useCartStore } from '../../store/cartStore';
 import Button from '../ui/Button';
@@ -10,13 +10,19 @@ interface ProductCardProps {
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
-  const { addItem, items } = useCartStore();
+  const { addItem, items, updateQuantity } = useCartStore();
   const quantityInCart = items.find(item => item.product.id === product.id)?.quantity ?? 0;
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     addItem(product, 1);
+  };
+
+  const handleQuantityChange = (e: React.MouseEvent, quantity: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    updateQuantity(product.id, quantity);
   };
 
   return (
@@ -44,15 +50,39 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             <span className="text-xs text-gray-500 px-2 py-1 bg-gray-100 rounded-full">
               {product.category}
             </span>
-            <Button
-              variant="primary"
-              size="sm"
-              onClick={handleAddToCart}
-              className="flex items-center space-x-1"
-            >
-              <ShoppingCart className="h-4 w-4" />
-              <span>{quantityInCart > 0 ? `In Cart: ${quantityInCart}` : 'Add to Cart'}</span>
-            </Button>
+            {quantityInCart > 0 ? (
+              <div className="flex items-center overflow-hidden rounded-md border border-indigo-600 text-indigo-600">
+                <button
+                  type="button"
+                  onClick={(e) => handleQuantityChange(e, quantityInCart - 1)}
+                  aria-label="Decrease quantity"
+                  className="p-2 transition-colors hover:bg-indigo-50"
+                >
+                  <Minus className="h-4 w-4" />
+                </button>
+                <span className="min-w-8 border-x border-indigo-600 px-2 py-1 text-center text-sm font-semibold">
+                  {quantityInCart}
+                </span>
+                <button
+                  type="button"
+                  onClick={(e) => handleQuantityChange(e, quantityInCart + 1)}
+                  aria-label="Increase quantity"
+                  className="p-2 transition-colors hover:bg-indigo-50"
+                >
+                  <Plus className="h-4 w-4" />
+                </button>
+              </div>
+            ) : (
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={handleAddToCart}
+                className="flex items-center space-x-1"
+              >
+                <ShoppingCart className="h-4 w-4" />
+                <span>Add to Cart</span>
+              </Button>
+            )}
           </div>
         </div>
       </Link>
