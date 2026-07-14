@@ -10,7 +10,8 @@ interface ProductCardProps {
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
-  const { addItem } = useCartStore();
+  const { addItem, items } = useCartStore();
+  const quantityInCart = items.find(item => item.product.id === product.id)?.quantity ?? 0;
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -50,7 +51,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
               className="flex items-center space-x-1"
             >
               <ShoppingCart className="h-4 w-4" />
-              <span>Add to Cart</span>
+              <span>{quantityInCart > 0 ? `In Cart: ${quantityInCart}` : 'Add to Cart'}</span>
             </Button>
           </div>
         </div>
